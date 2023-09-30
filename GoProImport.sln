@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.31112.23
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoProImport", "GoProImport.csproj", "{DBC56928-F686-4039-A9C7-2A65A0F6A538}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E4F5A03C-7A50-4323-A1E2-3875665B7700}
+	EndGlobalSection
+EndGlobal
