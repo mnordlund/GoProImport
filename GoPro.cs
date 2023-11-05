@@ -3,6 +3,8 @@ using System.IO;
 using MetadataExtractor;
 using System.Linq;
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
+using System.Threading.Channels;
 
 namespace GoProImport
 {
@@ -12,21 +14,73 @@ namespace GoProImport
         public void ImportFiles(string drive)
         {
             var path = Path.Combine(drive, @"DCIM\100GOPRO");
-            string[] files = System.IO.Directory.GetFiles(path, "*.mp4");
+            var fileList = new List<FileItem>();
+
+            string[] mp4Files = System.IO.Directory.GetFiles(path, "*.mp4");
+            string[] jpegFiles = System.IO.Directory.GetFiles(path, "*.jpg");
 
             var camera = GetCamera(drive);
 
-            foreach(string file in files)
+            Console.WriteLine("Parsing Photos:");
+            foreach(string file in jpegFiles)
             {
-                Console.WriteLine($"{file} -> {Path.Combine(outpath,GetNewFilepath(file, camera))}");
+                var dest = Path.Combine(outpath, GetNewJPEGFilepath(file, camera));
+
+                if (System.IO.File.Exists(dest))
+                {
+                    // TODO Check if this is the same file or a different one (check the original name in the header of dest.
+                    Console.WriteLine($"File {dest} already exists.");
+                }
+                else
+                {
+                    if (!System.IO.Directory.Exists(Path.GetDirectoryName(dest)))
+                    {
+                        System.IO.Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    }
+                    fileList.Add(new FileItem(file, dest));
+                }
+                //listFileTags(file);
+            }
+
+            Console.WriteLine("Parsing Videos:");
+            foreach (string file in mp4Files)
+            {
+                var dest = Path.Combine(outpath, GetNewMP4Filepath(file, camera));
 
                 // TODO Include Proxy file if it exists.
-                File.Copy(file, Path.Combine(outpath, GetNewFilepath(file, camera)));
-                //parseMp4(file);
+                if (System.IO.File.Exists(dest))
+                {
+                    // TODO Check if this is the same file or a different one (check the original name in the header of dest.
+                    Console.WriteLine($"File {dest} already exists.");
+                }
+                else
+                {
+                    if(!System.IO.Directory.Exists(Path.GetDirectoryName(dest)))
+                    {
+                        System.IO.Directory.CreateDirectory(Path.GetDirectoryName(dest));
+                    }
+                    fileList.Add(new FileItem(file, dest));
+                }
+                //listFileTags(file);
+            }
+
+            var totalSize = fileList.Sum((fi) => fi.Size);
+
+            Console.WriteLine($"Files found: {fileList.Count} Total size {(totalSize/Math.Pow(1024, 3)).ToString("0.00")} GB");
+
+            Console.WriteLine("Copy files? (y/n): ");
+            var reply = Console.ReadLine();
+            if (reply.Trim().ToLower() == "y")
+            {
+                Console.WriteLine("Copying files...");
+                foreach(var item in fileList)
+                {
+                    File.Copy(item.OriginalPath, item.NewPath,true);
+                }
             }
         }
 
-        private void parseMp4(string filepath)
+        private void listFileTags(string filepath)
         {
             var dirs = ImageMetadataReader.ReadMetadata(filepath);
 
@@ -37,7 +91,28 @@ namespace GoProImport
                 }
         }
 
-        private string GetNewFilepath(string filepath, string camstr)
+        private string GetNewJPEGFilepath(string filepath, string camstr)
+        {
+            var dirs = ImageMetadataReader.ReadMetadata(filepath);
+
+
+            var exifIFD0 = dirs.OfType<MetadataExtractor.Formats.Exif.ExifIfd0Directory>().FirstOrDefault();
+
+
+            var dateTime = exifIFD0.GetDateTime(MetadataExtractor.Formats.Exif.ExifIfd0Directory.TagDateTime);
+
+            var timestamp = dateTime.ToString("yyMMddHHmmss");
+
+            var year = dateTime.ToString("yyyy");
+
+            var date = dateTime.ToString("yyyy-MM-dd");
+
+            var path = @$"{year}\{date}\";
+
+            return $"{path}{timestamp}_{camstr}.jpg";
+        }
+
+        private string GetNewMP4Filepath(string filepath, string camstr)
         {
             var dirs = ImageMetadataReader.ReadMetadata(filepath);
 
@@ -48,6 +123,8 @@ namespace GoProImport
 
             var timestamp = dateTime.ToString("yyMMddHHmmss");
             var res = GetResolutionString(qttheader.GetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagWidth), qttheader.GetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagHeight));
+
+            // TODO Find out FPS of file and append it to the name.
 
             var year = dateTime.ToString("yyyy");
 
