@@ -4,7 +4,6 @@ using MetadataExtractor;
 using System.Linq;
 using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
-using System.Threading.Channels;
 
 namespace GoProImport
 {
@@ -16,6 +15,11 @@ namespace GoProImport
             var path = Path.Combine(drive, @"DCIM\100GOPRO");
             var fileList = new List<FileItem>();
 
+            if(!Path.Exists(path))
+            {
+                Console.WriteLine($"ERROR: Path '{path}' does not exist!");
+                return;
+            }
             string[] mp4Files = System.IO.Directory.GetFiles(path, "*.mp4");
             string[] jpegFiles = System.IO.Directory.GetFiles(path, "*.jpg");
 
@@ -72,11 +76,20 @@ namespace GoProImport
             var reply = Console.ReadLine();
             if (reply.Trim().ToLower() == "y")
             {
-                Console.WriteLine("Copying files...");
+                Console.Write("Copying files...");
+                var count = 0;
+                var progress = new[]{'|', '/', '-', '\\'};
+                Console.CursorVisible = false;
+
                 foreach(var item in fileList)
                 {
+                    Console.Write("\b" + progress[(count++) % progress.Length]);
                     File.Copy(item.OriginalPath, item.NewPath,true);
                 }
+
+                Console.WriteLine("\bDone!");
+                Console.CursorVisible = true;
+
             }
         }
 
