@@ -9,7 +9,16 @@ namespace GoProImport
         {
             // TODO Parse arguments to get drive/path and out path etc.
             var gp = new GoPro();
-            gp.ImportFiles(@"i:");
+            var driveArray = gp.FindDrives();
+            if(driveArray.Length == 0 ) 
+            {
+                Console.WriteLine("No drives found.");
+                return;
+            }
+            foreach (var drive in driveArray)
+            {
+                gp.ImportFiles(drive);
+            }
         }
     }
 }

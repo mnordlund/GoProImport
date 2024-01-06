@@ -10,6 +10,21 @@ namespace GoProImport
     class GoPro
     {
         public string outpath { get; set; } = @"e:\Foto video\martin\GoPro\";
+
+        public string[] FindDrives()
+        {
+            var drives = new List<string>();
+            foreach(var drive in DriveInfo.GetDrives())
+            {
+                if(Path.Exists(Path.Combine(drive.Name, @"DCIM\100GOPRO")))
+                {
+                    Console.WriteLine($"Found drive: {drive.Name}");
+                    drives.Add(drive.Name);
+                }
+            }
+
+            return drives.ToArray();
+        }
         public void ImportFiles(string drive)
         {
             var path = Path.Combine(drive, @"DCIM\100GOPRO");
