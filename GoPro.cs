@@ -9,7 +9,9 @@ namespace GoProImport
 {
     class GoPro
     {
-        public string outpath { get; set; } = @"e:\Foto video\martin\GoPro\";
+        // TODO Make this configurable
+        // TODO Add backup paths where backups can be copied to.
+        public string outpath { get; set; } = @"g:\GoPro\";
 
         public string[] FindDrives()
         {
@@ -99,6 +101,7 @@ namespace GoProImport
                 foreach(var item in fileList)
                 {
                     Console.Write("\b" + progress[(count++) % progress.Length]);
+                    // TODO Write a filecopy function with progress
                     File.Copy(item.OriginalPath, item.NewPath,true);
                 }
 
