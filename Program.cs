@@ -1,4 +1,6 @@
-﻿using System;
+﻿using GoProImport.Devices;
+using MetadataExtractor;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -9,14 +11,60 @@ namespace GoProImport
 {
     class Program
     {
+        static string Version = "v0.1.0";
+
+        static string Usage = @$"GoPro Import version: {Version}
+Usage:
+    -help (-h) Show this help
+    -version -v Show version
+    -info -i <file> Show file information on file <file>
+    -out -o <dir> Use <dir> as output directory
+";
         static void Main(string[] args)
         {
-            // TODO Parse arguments to get drive/path and out path etc.
-            /*
-             * List of suggested arguments
-             * -d <directory> import from given directory
-             * -info <file> list all meta information on the given file
-             */
+            // Default configuration
+            // TODO Read from a config file
+            var DstPath = @"D:\GoPro";
+
+            // Parse arguments
+
+            if (args.Length > 0)
+            {
+                for(var i  = 0; i < args.Length; i++)
+                {
+                    switch (args[i])
+                    {
+                        case "-h":
+                        case "-help":
+                            Console.WriteLine(Usage);
+                            return;
+                            break;
+                        case "-v":
+                        case "-version":
+                            Console.WriteLine($"GoPro Import Version {Version}");
+                            Console.WriteLine("By: Martin Nordlund (martin@mnordlund.se)");
+                            return;
+                            break;
+                        case "-i":
+                        case "-info":
+                            listFileTags(args[++i]);
+                            return;
+                            break;
+                        case "-o":
+                        case "-out":
+                            DstPath = args[++i];
+                            break;
+                        case "-d":
+                        case "-device":
+                            // TODO use args[++i] as device, ignore device type
+                            throw new NotImplementedException();
+                            break;
+                    }
+                }
+            }
+
+            FileItem.DstPath = DstPath;
+
             var deviceList = DeviceFinder.ListDevices();
             if(deviceList.Length == 0 ) 
             {
@@ -32,26 +80,53 @@ namespace GoProImport
             }
 
             Console.WriteLine("Do you want to name the import? (Enter to skip):");
-            var postfix = Console.ReadLine().Trim().Replace(' ', '_');
+            var importName = Console.ReadLine().Trim().Replace(' ', '_');
 
             List<FileItem> fileList = new List<FileItem>();
             foreach (var device in deviceList)
             {
-                device.Postfix = postfix;
+                device.ImportName = importName;
                 fileList.AddRange(device.ListFiles());
             }
 
-            foreach (var file in fileList)
+            var overwrite = "n";
+
+            for(int i = fileList.Count - 1; i >= 0; i--)
             {
-                Console.WriteLine(file.OriginalPath +" => " + file.NewPath + " " + file.SizeString);
-                if (file.FileExists)
+                if (fileList[i].FileExists)
                 {
-                    Console.WriteLine($"File '{file.NewPath}' already exists, will be overwritten.");
+                    if (overwrite.Equals("never"))
+                    {
+                        fileList.RemoveAt(i);
+                        continue;
+                    }
+
+                    if (!overwrite.Equals("a"))
+                    {
+                        Console.WriteLine($"File '{Path.Combine(DstPath, fileList[i].NewPath)}' already exists, overwrite (y/n/a/never)");
+                        overwrite = Console.ReadLine();
+                        if (!overwrite.Equals("y") && !overwrite.Equals("a"))
+                        {
+                            fileList.RemoveAt(i);
+                        }
+                    }
                 }
+            }
+
+            if (fileList.Count == 0)
+            {
+                Console.WriteLine("No files found");
+                return;
+            }
+
+            foreach(var file in fileList)
+            {
+                Console.WriteLine($"{file.OriginalPath} => {Path.Combine(DstPath, file.NewPath)} {file.SizeString}");
             }
 
             var totalSize = fileList.Sum((fi) => fi.Size);
 
+            // TODO Create function to pretty print sizes
             Console.WriteLine($"Files found: {fileList.Count} Total size {(totalSize / Math.Pow(1024, 3)).ToString("0.00")} GB");
 
             Console.WriteLine("Copy files? (y/n): ");
@@ -99,6 +174,30 @@ namespace GoProImport
 
             Console.WriteLine("Press any key to quit.");
             Console.ReadKey();
+        }
+
+        private static void listFileTags(string filepath)
+        {
+            try
+            {
+                var metaData = ImageMetadataReader.ReadMetadata(filepath);
+
+                foreach (var dir in metaData)
+                {
+                    Console.WriteLine($"{dir.Name}");
+                    Console.WriteLine("{");
+                    foreach (var tag in dir.Tags)
+                    {
+                        Console.WriteLine($"\t{tag.Name}: {tag.Description}");
+                    }
+                    Console.WriteLine("}\n");
+                }
+            }
+            catch (Exception)
+            {
+                Console.WriteLine($"Unable to parse file {filepath}");
+            }
+
         }
     }
 }

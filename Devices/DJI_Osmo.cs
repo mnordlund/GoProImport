@@ -1,4 +1,5 @@
-﻿using System;
+﻿using MetadataExtractor;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -7,24 +8,15 @@ using System.Threading.Tasks;
 
 namespace GoProImport.Devices
 {
-    internal class DJI_Osmo(DriveInfo DriveInfo) : Device
+    internal class DJI_Osmo : IDevice
     {
-        public DriveInfo DriveInfo { get; set; } = DriveInfo;
-        public string DeviceType => "DJI Mic 2";
-        public string Postfix { get; set; }
+        public static new bool IsDevice(DriveInfo drive) => Path.Exists(Path.Combine(drive.Name, new DJI_Osmo(drive).DCIMFolder));
+        public override string DeviceType => "DJI Osmo";
 
-        public string outpath { get; set; } = @"d:\GoPro\";
+        public override string DeviceName => "DOP3";
 
-        private const string DCIM_FOLDER = @"DJI_Audio_001";
+        public override string DCIMFolder => @"DCIM\DJI_001";
 
-        public static bool IsDevice(DriveInfo drive)
-        {
-            throw new NotImplementedException();
-        }
-
-        public FileItem[] ListFiles()
-        {
-            throw new NotImplementedException();
-        }
+        public DJI_Osmo(DriveInfo DriveInfo) : base(DriveInfo) { }
     }
 }

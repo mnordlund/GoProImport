@@ -6,6 +6,7 @@ namespace GoProImport
 {
     internal class FileItem
     {
+        public static string DstPath { get; set; }
         public string OriginalPath { get; set; }
         public string NewPath { get; set; }
         public long Size { get; set; }
@@ -13,10 +14,11 @@ namespace GoProImport
         {
             get
             {
-                return File.Exists(NewPath);
+                return File.Exists(Path.Combine(DstPath,NewPath));
             }
         }
 
+        // TODO Create function to pretty print sizes
         public string SizeString => (Size / Math.Pow(1024, 2)).ToString("0.00") + "MB";
 
         public FileItem(string originalPath, string newPath)
@@ -29,11 +31,12 @@ namespace GoProImport
 
         public void CopyFile()
         {
-            if(!Path.Exists(Path.GetDirectoryName(NewPath)))
+            var fullNewPath = Path.Combine(DstPath,NewPath);
+            if(!Path.Exists(Path.GetDirectoryName(fullNewPath)))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(NewPath));
+                Directory.CreateDirectory(Path.GetDirectoryName(fullNewPath));
             }
-            File.Copy(OriginalPath, NewPath, true);
+            File.Copy(OriginalPath, fullNewPath, true);
         }
     }
 }

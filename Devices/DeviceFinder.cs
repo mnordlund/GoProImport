@@ -1,14 +1,13 @@
-﻿using GoProImport.Devices;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.IO;
 
-namespace GoProImport
+namespace GoProImport.Devices
 {
     internal class DeviceFinder
     {
-        public static Device[] ListDevices()
+        public static IDevice[] ListDevices()
         {
-            var drives = new List<Device>();
+            var drives = new List<IDevice>();
 
             foreach (var drive in DriveInfo.GetDrives())
             {
@@ -22,9 +21,8 @@ namespace GoProImport
             return drives.ToArray();
         }
 
-        public static Device GetDevice(DriveInfo drive)
+        public static IDevice GetDevice(DriveInfo drive)
         {
-            // TODO Add more device types.
             if (GoPro.IsDevice(drive))
             {
                 return new GoPro(drive);
@@ -32,6 +30,10 @@ namespace GoProImport
             else if (DJI_Mic.IsDevice(drive))
             {
                 return new DJI_Mic(drive);
+            }
+            else if (DJI_Osmo.IsDevice(drive))
+            {
+                return new DJI_Osmo(drive);
             }
 
             return null;
