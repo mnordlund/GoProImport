@@ -2,15 +2,19 @@
 
 namespace GoProImport.Devices
 {
-    internal class DJI_Mic : IDevice
+    internal class DJI_Mic : DeviceBase
     {
         public override string DeviceType => "DJI Mic 2";
 
         public override string DeviceName => "DM2";
 
         public override string DCIMFolder => @"DJI_Audio_001";
-        public DJI_Mic(DriveInfo DriveInfo) : base(DriveInfo) { }
 
+        public DJI_Mic(DriveInfo DriveInfo) : base(DriveInfo) 
+        {
+            // Default to delete files for DJI Mic
+            DeleteFiles = true;
+        }
 
         public static new bool IsDevice(DriveInfo drive)
         {

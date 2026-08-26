@@ -5,9 +5,9 @@ namespace GoProImport.Devices
 {
     internal class DeviceFinder
     {
-        public static IDevice[] ListDevices()
+        public static DeviceBase[] ListDevices()
         {
-            var drives = new List<IDevice>();
+            var drives = new List<DeviceBase>();
 
             foreach (var drive in DriveInfo.GetDrives())
             {
@@ -21,7 +21,7 @@ namespace GoProImport.Devices
             return drives.ToArray();
         }
 
-        public static IDevice GetDevice(DriveInfo drive)
+        public static DeviceBase GetDevice(DriveInfo drive)
         {
             if (GoPro.IsDevice(drive))
             {

@@ -38,5 +38,10 @@ namespace GoProImport
             }
             File.Copy(OriginalPath, fullNewPath, true);
         }
+
+        public void DeleteOriginal()
+        {
+            File.Delete(OriginalPath);
+        }
     }
 }

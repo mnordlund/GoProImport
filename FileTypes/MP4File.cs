@@ -9,7 +9,7 @@ namespace GoProImport.FileTypes
     {
         public string Extension => ".mp4";
 
-        public string GetNewFilepath(string filename, IDevice device)
+        public string GetNewFilepath(string filename, DeviceBase device)
         {
             var dirs = ImageMetadataReader.ReadMetadata(filename);
 
@@ -19,6 +19,8 @@ namespace GoProImport.FileTypes
 
             var dateTime = fileheader.GetDateTime(MetadataExtractor.Formats.FileSystem.FileMetadataDirectory.TagFileModifiedDate);
 
+            // TODO Use date created together with timezone from file modified to set timestamp.
+            // TODO Possibly depending on if using native device or not
             var timestamp = dateTime.AddHours(device.HourOffset).ToString("yyMMdd_HHmmss");
             var res = GetResolutionString(qttheader.GetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagWidth), qttheader.GetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagHeight));
 

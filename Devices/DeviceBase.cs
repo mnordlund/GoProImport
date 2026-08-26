@@ -5,7 +5,7 @@ using System.IO;
 
 namespace GoProImport.Devices
 {
-    internal abstract class IDevice(DriveInfo DriveInfo)
+    internal abstract class DeviceBase(DriveInfo DriveInfo)
     {
         public static bool IsDevice(DriveInfo drive) => throw new NotImplementedException();
         public DriveInfo DriveInfo { get; set; } = DriveInfo;
@@ -13,6 +13,7 @@ namespace GoProImport.Devices
         public abstract String DeviceName { get; }
         public string ImportName { get; set; }
         public int HourOffset { get; }
+        public bool DeleteFiles { get; set; } = false;
 
         public abstract string DCIMFolder { get; }
 

@@ -4,21 +4,18 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Reflection.Metadata;
-using System.Threading;
 
 namespace GoProImport
 {
     class Program
     {
-        static string Version = "v0.1.0";
-
-        static string Usage = @$"GoPro Import version: {Version}
+        static string Usage = @$"
 Usage:
     -help (-h) Show this help
     -version -v Show version
     -info -i <file> Show file information on file <file>
     -out -o <dir> Use <dir> as output directory
+    -device -d <dir> Use <dir> as device to import
 ";
         static void Main(string[] args)
         {
@@ -26,6 +23,7 @@ Usage:
             // TODO Read from a config file
             var DstPath = @"D:\GoPro";
 
+            DeviceBase[] devices = null;
             // Parse arguments
 
             if (args.Length > 0)
@@ -36,37 +34,43 @@ Usage:
                     {
                         case "-h":
                         case "-help":
+                            Version.WriteVersion();
                             Console.WriteLine(Usage);
                             return;
-                            break;
                         case "-v":
                         case "-version":
-                            Console.WriteLine($"GoPro Import Version {Version}");
+                            Console.WriteLine($"GoPro Import Version {Version.VersionString}");
                             Console.WriteLine("By: Martin Nordlund (martin@mnordlund.se)");
                             return;
-                            break;
                         case "-i":
                         case "-info":
                             listFileTags(args[++i]);
                             return;
-                            break;
                         case "-o":
                         case "-out":
                             DstPath = args[++i];
+                            Console.WriteLine($"Destination set to: ${DstPath}");
                             break;
                         case "-d":
                         case "-device":
-                            // TODO use args[++i] as device, ignore device type
-                            throw new NotImplementedException();
+                            Console.WriteLine($"Using folder ${args[i+1]} as native device");
+                            devices = [new NativeDevice(args[++i])];
+                            
                             break;
                     }
                 }
             }
 
+            Version.WriteVersion();
+
             FileItem.DstPath = DstPath;
 
-            var deviceList = DeviceFinder.ListDevices();
-            if(deviceList.Length == 0 ) 
+            if (devices == null)
+            {
+                devices = DeviceFinder.ListDevices();
+            }
+
+            if(devices.Length == 0 ) 
             {
                 Console.WriteLine("No drives found.");
                 Console.ReadKey();
@@ -74,7 +78,7 @@ Usage:
             }
 
             Console.WriteLine("Drives found: ");
-            foreach (var device in deviceList)
+            foreach (var device in devices)
             {
                 Console.WriteLine($"{device.DeviceType} => {device.DriveInfo.Name}");
             }
@@ -83,10 +87,15 @@ Usage:
             var importName = Console.ReadLine().Trim().Replace(' ', '_');
 
             List<FileItem> fileList = new List<FileItem>();
-            foreach (var device in deviceList)
+            List<FileItem> deleteList = new List<FileItem>();
+            foreach (var device in devices)
             {
                 device.ImportName = importName;
                 fileList.AddRange(device.ListFiles());
+                if(device.DeleteFiles)
+                {
+                    deleteList.AddRange(device.ListFiles());
+                }
             }
 
             var overwrite = "n";
@@ -97,6 +106,7 @@ Usage:
                 {
                     if (overwrite.Equals("never"))
                     {
+                        Console.WriteLine($"Skipping existing file: {fileList[i].OriginalPath} => {fileList[i].NewPath}");
                         fileList.RemoveAt(i);
                         continue;
                     }
@@ -113,7 +123,7 @@ Usage:
                 }
             }
 
-            if (fileList.Count == 0)
+            if (0 == fileList.Count)
             {
                 Console.WriteLine("No files found");
                 return;
@@ -169,7 +179,29 @@ Usage:
                 Console.WriteLine($"[{progress}]");
                 Console.CursorVisible = true;
 
+                if (deleteList.Count > 0)
+                {
+                    Console.WriteLine("Files marked for deletion:");
 
+                    foreach(var file in deleteList)
+                    {
+                        Console.WriteLine($"{file.OriginalPath}");
+                    }
+                    Console.WriteLine($"Delete {deleteList.Count} files? (y/n): ");
+
+                    reply = Console.ReadLine();
+                    if (reply.Trim().ToLower() == "y")
+                    {
+                        Console.Write("Deleteing files...");
+
+                        foreach(var file in deleteList)
+                        {
+                            file.DeleteOriginal();
+                        }
+
+                        Console.WriteLine("Done!");
+                    }
+                }
             }
 
             Console.WriteLine("Press any key to quit.");

@@ -8,7 +8,7 @@ namespace GoProImport.FileTypes
     {
         public string Extension => ".jpg";
 
-        public string GetNewFilepath(string filename, IDevice device)
+        public string GetNewFilepath(string filename, DeviceBase device)
         {
             var dirs = ImageMetadataReader.ReadMetadata(filename);
 

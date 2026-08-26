@@ -4,7 +4,7 @@ using Newtonsoft.Json.Linq;
 
 namespace GoProImport.Devices
 {
-    class GoPro : IDevice
+    class GoPro : DeviceBase
     {
         public static new bool IsDevice(DriveInfo drive) => Path.Exists(Path.Combine(drive.Name, new GoPro(drive).DCIMFolder));
         public override string DeviceType => "GoPro";

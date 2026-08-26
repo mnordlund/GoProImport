@@ -9,7 +9,7 @@ namespace GoProImport.FileTypes
     {
         private IFiletype[] Filetypes = [new MP4File(), new WAVFile(), new JPEGFile()];
 
-        public string GetNewFilename(string filename, IDevice device)
+        public string GetNewFilename(string filename, DeviceBase device)
         {
 
             var extension = Path.GetExtension(filename).ToLower();

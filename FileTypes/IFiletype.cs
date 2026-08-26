@@ -5,6 +5,6 @@ namespace GoProImport.FileTypes
     internal interface IFiletype
     {
         public string Extension { get; }
-        public string GetNewFilepath(string filename, IDevice device);
+        public string GetNewFilepath(string filename, DeviceBase device);
     }
 }
