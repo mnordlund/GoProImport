@@ -1,6 +1,7 @@
-﻿using GoProImport.Devices;
+using GoProImport.Devices;
 using MetadataExtractor;
 using System;
+using System.IO;
 using System.Linq;
 
 namespace GoProImport.FileTypes
@@ -11,30 +12,68 @@ namespace GoProImport.FileTypes
 
         public string GetNewFilepath(string filename, DeviceBase device)
         {
-            var dirs = ImageMetadataReader.ReadMetadata(filename);
+            DateTime? dateTime = null;
+            int width = 0;
+            int height = 0;
 
-            var qtmheader = dirs.OfType<MetadataExtractor.Formats.QuickTime.QuickTimeMovieHeaderDirectory>().FirstOrDefault();
-            var qttheader = dirs.OfType<MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory>().FirstOrDefault();
-            var fileheader = dirs.OfType<MetadataExtractor.Formats.FileSystem.FileMetadataDirectory>().FirstOrDefault();
+            try
+            {
+                var dirs = ImageMetadataReader.ReadMetadata(filename);
 
-            var dateTime = fileheader.GetDateTime(MetadataExtractor.Formats.FileSystem.FileMetadataDirectory.TagFileModifiedDate);
+                var qttheader = dirs.OfType<MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory>().FirstOrDefault();
+                if (qttheader != null)
+                {
+                    qttheader.TryGetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagWidth, out width);
+                    qttheader.TryGetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagHeight, out height);
+                }
+
+                var fileheader = dirs.OfType<MetadataExtractor.Formats.FileSystem.FileMetadataDirectory>().FirstOrDefault();
+                if (fileheader != null && fileheader.TryGetDateTime(MetadataExtractor.Formats.FileSystem.FileMetadataDirectory.TagFileModifiedDate, out var dt))
+                {
+                    dateTime = dt;
+                }
+                else
+                {
+                    var qtmheader = dirs.OfType<MetadataExtractor.Formats.QuickTime.QuickTimeMovieHeaderDirectory>().FirstOrDefault();
+                    if (qtmheader != null && qtmheader.TryGetDateTime(MetadataExtractor.Formats.QuickTime.QuickTimeMovieHeaderDirectory.TagCreated, out var qtmDt))
+                    {
+                        dateTime = qtmDt;
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Fallback to file system timestamp below if metadata parsing fails
+            }
+
+            if (!dateTime.HasValue)
+            {
+                dateTime = File.Exists(filename) ? File.GetLastWriteTime(filename) : DateTime.Now;
+            }
 
             // TODO Use date created together with timezone from file modified to set timestamp.
             // TODO Possibly depending on if using native device or not
-            var timestamp = dateTime.AddHours(device.HourOffset).ToString("yyMMdd_HHmmss");
-            var res = GetResolutionString(qttheader.GetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagWidth), qttheader.GetInt32(MetadataExtractor.Formats.QuickTime.QuickTimeTrackHeaderDirectory.TagHeight));
+            var adjustedDateTime = dateTime.Value.AddHours(device.HourOffset);
+            var timestamp = adjustedDateTime.ToString("yyMMdd_HHmmss");
+            var res = GetResolutionString(width, height);
+            var resPart = string.IsNullOrEmpty(res) ? string.Empty : $"_{res}";
 
-            var year = dateTime.ToString("yyyy");
+            var year = adjustedDateTime.ToString("yyyy");
 
-            var date = dateTime.ToString("yyyy-MM-dd");
+            var date = adjustedDateTime.ToString("yyyy-MM-dd");
 
             var path = @$"{year}\{date}_{device.ImportName}\";
 
-            return $"{path}{timestamp}_{device.DeviceName}_{res}.mp4";
+            return $"{path}{timestamp}_{device.DeviceName}{resPart}.mp4";
         }
 
         private static string GetResolutionString(int width, int height)
         {
+            if (width <= 0 && height <= 0)
+            {
+                return string.Empty;
+            }
+
             // TODO Make sure resolutions are accurate
             var resString = string.Empty;
             var max = width > height ? width : height;

@@ -1,4 +1,4 @@
-﻿using GoProImport.FileTypes;
+using GoProImport.FileTypes;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -12,20 +12,20 @@ namespace GoProImport.Devices
         public abstract String DeviceType { get; }
         public abstract String DeviceName { get; }
         public string ImportName { get; set; }
-        public int HourOffset { get; }
+        public int HourOffset { get; set; } = 0;
         public bool DeleteFiles { get; set; } = false;
 
         public abstract string DCIMFolder { get; }
 
         public FileItem[] ListFiles()
         {
-            var path = Path.Combine(DriveInfo.Name, DCIMFolder);
+            var path = Path.IsPathRooted(DCIMFolder) ? DCIMFolder : Path.Combine(DriveInfo.Name, DCIMFolder);
             var fileList = new List<FileItem>();
 
-            if (!Path.Exists(path))
+            if (!Directory.Exists(path))
             {
                 Console.WriteLine($"ERROR: Path '{path}' does not exist!");
-                return null;
+                return Array.Empty<FileItem>();
             }
 
             var files = Directory.GetFiles(path);
@@ -36,7 +36,7 @@ namespace GoProImport.Devices
                 var newName = renamer.GetNewFilename(file, this);
                 if (newName != null)
                 {
-                    fileList.Add(new FileItem(file, newName));
+                    fileList.Add(new FileItem(file, newName, this));
                 }
             }
 

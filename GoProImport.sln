@@ -5,16 +5,42 @@ VisualStudioVersion = 16.0.31112.23
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoProImport", "GoProImport.csproj", "{DBC56928-F686-4039-A9C7-2A65A0F6A538}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GoProImport.Tests", "GoProImport.Tests\GoProImport.Tests.csproj", "{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
 		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|x64.Build.0 = Debug|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Debug|x86.Build.0 = Debug|Any CPU
 		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|x64.ActiveCfg = Release|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|x64.Build.0 = Release|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|x86.ActiveCfg = Release|Any CPU
+		{DBC56928-F686-4039-A9C7-2A65A0F6A538}.Release|x86.Build.0 = Release|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Debug|x64.Build.0 = Debug|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Debug|x86.Build.0 = Debug|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Release|x64.ActiveCfg = Release|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Release|x64.Build.0 = Release|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Release|x86.ActiveCfg = Release|Any CPU
+		{A75C447F-CC1C-41A1-BB4D-1FEDF7A5694F}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

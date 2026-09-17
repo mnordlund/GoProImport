@@ -6,19 +6,19 @@ This document tracks prioritized bugs, performance optimizations, feature reques
 
 ## 1. Critical Bugs & Data Safety (High Priority)
 
-- [ ] **Decouple and verify deletions before deleting source files**
+- [x] **Decouple and verify deletions before deleting source files**
   - **Issue**: In `Program.cs`, `deleteList` is populated before copying starts (`Program.cs#L90-L99`). If a file fails to copy, errors out, or is skipped during an overwrite prompt, it remains in `deleteList` and can be permanently deleted from the camera/card.
   - **Task**: Only queue files for deletion if they were actually copied successfully, and verify integrity (at least check target file size matches source, or hash check) before prompting for or executing deletion.
-- [ ] **Fix `IndexOutOfRangeException` on CLI argument parsing**
+- [x] **Fix `IndexOutOfRangeException` on CLI argument parsing**
   - **Issue**: `Program.cs` accesses `args[++i]` and `args[i+1]` without verifying array bounds (`Program.cs#L47-L59`).
   - **Task**: Add bounds checking for all parameter arguments (`-d`, `-o`, `-i`), or migrate to a robust argument parser like `System.CommandLine`.
-- [ ] **Fix year vs timestamp time offset discrepancy in `JPEGFile.cs`**
+- [x] **Fix year vs timestamp time offset discrepancy in `JPEGFile.cs`**
   - **Issue**: `JPEGFile.cs#L21-L24` applies `device.HourOffset` to the directory `year` string, but does not apply it to `timestamp`.
   - **Task**: Apply `device.HourOffset` to both `timestamp` and `year`.
-- [ ] **Add null-guards on metadata reading in `MP4File.cs`, `JPEGFile.cs`, and `WAVFile.cs`**
+- [x] **Add null-guards on metadata reading in `MP4File.cs`, `JPEGFile.cs`, and `WAVFile.cs`**
   - **Issue**: Calling `.GetInt32(...)` or `.GetDateTime(...)` directly on null directory objects (`qttheader`, `qtmheader`, `exifIFD0`) causes `NullReferenceException` on non-standard, corrupt, or missing metadata files.
   - **Task**: Add safe null-coalescing / fallback logic to file system timestamps when metadata directories are absent.
-- [ ] **Handle empty camera directories in `DJI_Osmo.cs`**
+- [x] **Handle empty camera directories in `DJI_Osmo.cs`**
   - **Issue**: `Directory.GetFiles(path)[0]` throws an `IndexOutOfRangeException` if the camera folder exists but has no recordings.
   - **Task**: Check if `Directory.GetFiles(path)` contains items before indexing index 0.
 

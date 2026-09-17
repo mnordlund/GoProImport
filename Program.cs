@@ -1,4 +1,4 @@
-﻿using GoProImport.Devices;
+using GoProImport.Devices;
 using MetadataExtractor;
 using System;
 using System.Collections.Generic;
@@ -7,7 +7,7 @@ using System.Linq;
 
 namespace GoProImport
 {
-    class Program
+    internal class Program
     {
         static string Usage = @$"
 Usage:
@@ -17,7 +17,7 @@ Usage:
     -out -o <dir> Use <dir> as output directory
     -device -d <dir> Use <dir> as device to import
 ";
-        static void Main(string[] args)
+        internal static void Main(string[] args)
         {
             // Default configuration
             // TODO Read from a config file
@@ -28,35 +28,67 @@ Usage:
 
             if (args.Length > 0)
             {
-                for(var i  = 0; i < args.Length; i++)
+                for (var i = 0; i < args.Length; i++)
                 {
                     switch (args[i])
                     {
                         case "-h":
                         case "-help":
+                        case "--help":
                             Version.WriteVersion();
                             Console.WriteLine(Usage);
                             return;
                         case "-v":
                         case "-version":
+                        case "--version":
                             Console.WriteLine($"GoPro Import Version {Version.VersionString}");
                             Console.WriteLine("By: Martin Nordlund (martin@mnordlund.se)");
                             return;
                         case "-i":
                         case "-info":
-                            listFileTags(args[++i]);
+                            if (i + 1 < args.Length)
+                            {
+                                listFileTags(args[++i]);
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error: Missing file argument for -info / -i.");
+                                Console.WriteLine(Usage);
+                            }
                             return;
                         case "-o":
                         case "-out":
-                            DstPath = args[++i];
-                            Console.WriteLine($"Destination set to: ${DstPath}");
+                            if (i + 1 < args.Length)
+                            {
+                                DstPath = args[++i];
+                                Console.WriteLine($"Destination set to: {DstPath}");
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error: Missing directory argument for -out / -o.");
+                                Console.WriteLine(Usage);
+                                return;
+                            }
                             break;
                         case "-d":
                         case "-device":
-                            Console.WriteLine($"Using folder ${args[i+1]} as native device");
-                            devices = [new NativeDevice(args[++i])];
-                            
+                            if (i + 1 < args.Length)
+                            {
+                                var deviceFolder = args[++i];
+                                Console.WriteLine($"Using folder {deviceFolder} as native device");
+                                devices = [new NativeDevice(deviceFolder)];
+                            }
+                            else
+                            {
+                                Console.WriteLine("Error: Missing directory argument for -device / -d.");
+                                Console.WriteLine(Usage);
+                                return;
+                            }
                             break;
+                        default:
+                            Console.WriteLine($"Unknown option: {args[i]}");
+                            Console.WriteLine(Usage);
+                            return;
                     }
                 }
             }
@@ -84,17 +116,17 @@ Usage:
             }
 
             Console.WriteLine("Do you want to name the import? (Enter to skip):");
-            var importName = Console.ReadLine().Trim().Replace(' ', '_');
+            var importName = Console.ReadLine()?.Trim().Replace(' ', '_') ?? string.Empty;
 
             List<FileItem> fileList = new List<FileItem>();
             List<FileItem> deleteList = new List<FileItem>();
             foreach (var device in devices)
             {
                 device.ImportName = importName;
-                fileList.AddRange(device.ListFiles());
-                if(device.DeleteFiles)
+                var files = device.ListFiles();
+                if (files != null)
                 {
-                    deleteList.AddRange(device.ListFiles());
+                    fileList.AddRange(files);
                 }
             }
 
@@ -104,18 +136,18 @@ Usage:
             {
                 if (fileList[i].FileExists)
                 {
-                    if (overwrite.Equals("never"))
+                    if (overwrite.Equals("never", StringComparison.OrdinalIgnoreCase))
                     {
                         Console.WriteLine($"Skipping existing file: {fileList[i].OriginalPath} => {fileList[i].NewPath}");
                         fileList.RemoveAt(i);
                         continue;
                     }
 
-                    if (!overwrite.Equals("a"))
+                    if (!overwrite.Equals("a", StringComparison.OrdinalIgnoreCase))
                     {
                         Console.WriteLine($"File '{Path.Combine(DstPath, fileList[i].NewPath)}' already exists, overwrite (y/n/a/never)");
-                        overwrite = Console.ReadLine();
-                        if (!overwrite.Equals("y") && !overwrite.Equals("a"))
+                        overwrite = Console.ReadLine()?.Trim().ToLower() ?? "n";
+                        if (!overwrite.Equals("y", StringComparison.OrdinalIgnoreCase) && !overwrite.Equals("a", StringComparison.OrdinalIgnoreCase))
                         {
                             fileList.RemoveAt(i);
                         }
@@ -142,10 +174,13 @@ Usage:
             Console.WriteLine("Copy files? (y/n): ");
 
             var reply = Console.ReadLine();
-            if (reply.Trim().ToLower() == "y")
+            if (reply != null && reply.Trim().ToLower() == "y")
             {
                 var progress = new string('-', 50);
-                Console.CursorVisible = false;
+                if (!Console.IsOutputRedirected)
+                {
+                    Console.CursorVisible = false;
+                }
 
                 long bytesCopied = 0;
                 int lastPercent = 0;
@@ -155,9 +190,21 @@ Usage:
                     Console.WriteLine($"Copying file {fileCount} of {fileList.Count}: {Path.GetFileName(item.NewPath)}");
                     Console.WriteLine($"[{progress}]");
                     
-                    item.CopyFile();
-                    bytesCopied += item.Size;
-                    var percent = (int)(bytesCopied * 100 / totalSize);
+                    var success = item.CopyFile();
+                    if (success)
+                    {
+                        bytesCopied += item.Size;
+                        if (item.Device != null && item.Device.DeleteFiles)
+                        {
+                            deleteList.Add(item);
+                        }
+                    }
+                    else
+                    {
+                        Console.WriteLine($"WARNING: Failed to copy or verify file: {item.OriginalPath}");
+                    }
+
+                    var percent = totalSize > 0 ? (int)(bytesCopied * 100 / totalSize) : 100;
 
                     var prgChars = progress.ToCharArray();
 
@@ -168,16 +215,22 @@ Usage:
 
                     progress = new string(prgChars);
                     lastPercent = (int)percent;
-                    Console.CursorLeft = 0;
-                    Console.CursorTop = Console.CursorTop - 2;
-                    Console.Write(new String(' ', Console.WindowWidth));
-                    Console.CursorLeft = 0;
+                    if (!Console.IsOutputRedirected)
+                    {
+                        Console.CursorLeft = 0;
+                        Console.CursorTop = Math.Max(0, Console.CursorTop - 2);
+                        Console.Write(new String(' ', Console.WindowWidth));
+                        Console.CursorLeft = 0;
+                    }
                     fileCount++;
                 }
 
                 Console.WriteLine($"Copying done!");
                 Console.WriteLine($"[{progress}]");
-                Console.CursorVisible = true;
+                if (!Console.IsOutputRedirected)
+                {
+                    Console.CursorVisible = true;
+                }
 
                 if (deleteList.Count > 0)
                 {
@@ -190,16 +243,25 @@ Usage:
                     Console.WriteLine($"Delete {deleteList.Count} files? (y/n): ");
 
                     reply = Console.ReadLine();
-                    if (reply.Trim().ToLower() == "y")
+                    if (reply != null && reply.Trim().ToLower() == "y")
                     {
-                        Console.Write("Deleteing files...");
+                        Console.Write("Deleting files...");
 
+                        int deletedCount = 0;
                         foreach(var file in deleteList)
                         {
-                            file.DeleteOriginal();
+                            if (file.VerifyIntegrity())
+                            {
+                                file.DeleteOriginal();
+                                deletedCount++;
+                            }
+                            else
+                            {
+                                Console.WriteLine($"\nSkipping deletion of '{file.OriginalPath}': destination missing or size mismatch!");
+                            }
                         }
 
-                        Console.WriteLine("Done!");
+                        Console.WriteLine($" Done! Deleted {deletedCount} of {deleteList.Count} files.");
                     }
                 }
             }
