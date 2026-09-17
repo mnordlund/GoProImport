@@ -44,7 +44,7 @@ namespace GoProImport.Tests
             var destFolder = Path.Combine(tempDir, "dest");
             FileItem.DstPath = destFolder;
 
-            var item = new FileItem(sourcePath, "imported.mp4");
+            var item = new FileItem(sourcePath, "imported.mp4", destinationPath: destFolder);
             var copied = item.CopyFile();
 
             Assert.True(copied);
@@ -62,7 +62,7 @@ namespace GoProImport.Tests
             var destFolder = Path.Combine(tempDir, "dest2");
             FileItem.DstPath = destFolder;
 
-            var item = new FileItem(sourcePath, "imported_missing.mp4");
+            var item = new FileItem(sourcePath, "imported_missing.mp4", destinationPath: destFolder);
             Assert.False(item.VerifyIntegrity());
 
             // Create dest with mismatched size

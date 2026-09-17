@@ -1,9 +1,11 @@
 using GoProImport.Devices;
 using MetadataExtractor;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace GoProImport
 {
@@ -119,7 +121,6 @@ Usage:
             var importName = Console.ReadLine()?.Trim().Replace(' ', '_') ?? string.Empty;
 
             List<FileItem> fileList = new List<FileItem>();
-            List<FileItem> deleteList = new List<FileItem>();
             foreach (var device in devices)
             {
                 device.ImportName = importName;
@@ -168,69 +169,70 @@ Usage:
 
             var totalSize = fileList.Sum((fi) => fi.Size);
 
-            // TODO Create function to pretty print sizes
-            Console.WriteLine($"Files found: {fileList.Count} Total size {(totalSize / Math.Pow(1024, 3)).ToString("0.00")} GB");
+            Console.WriteLine($"Files found: {fileList.Count} Total size {CopyProgressTracker.FormatSize(totalSize)}");
 
             Console.WriteLine("Copy files? (y/n): ");
 
             var reply = Console.ReadLine();
             if (reply != null && reply.Trim().ToLower() == "y")
             {
-                var progress = new string('-', 50);
-                if (!Console.IsOutputRedirected)
-                {
-                    Console.CursorVisible = false;
-                }
+                CopyProgressTracker.SafeSetCursorVisibility(false);
 
-                long bytesCopied = 0;
-                int lastPercent = 0;
-                int fileCount = 1;
-                foreach (var item in fileList)
-                {   
-                    Console.WriteLine($"Copying file {fileCount} of {fileList.Count}: {Path.GetFileName(item.NewPath)}");
-                    Console.WriteLine($"[{progress}]");
-                    
-                    var success = item.CopyFile();
-                    if (success)
+                var tracker = new CopyProgressTracker(totalSize, fileList.Count);
+                var concurrentDeleteList = new ConcurrentBag<FileItem>();
+
+                // Group files by distinct source device for concurrent multi-device transfer
+                var deviceGroups = fileList
+                    .GroupBy(f => f.Device != null ? f.Device.DriveInfo.Name : (Path.GetPathRoot(f.OriginalPath) ?? "Default"))
+                    .ToList();
+
+                var copyTasks = deviceGroups.Select(group => Task.Run(() =>
+                {
+                    var firstItem = group.First();
+                    var device = firstItem.Device;
+                    string deviceName = device?.DeviceType ?? Path.GetPathRoot(firstItem.OriginalPath) ?? "Device";
+                    long deviceTotalBytes = group.Sum(f => f.Size);
+                    int deviceFileIndex = 1;
+                    int deviceTotalFiles = group.Count();
+
+                    tracker.RegisterDevice(group.Key, deviceName, deviceTotalFiles, deviceTotalBytes);
+
+                    foreach (var item in group)
                     {
-                        bytesCopied += item.Size;
-                        if (item.Device != null && item.Device.DeleteFiles)
+                        var fileName = Path.GetFileName(item.NewPath);
+                        tracker.OnFileStart(group.Key, fileName, item.Size, deviceFileIndex);
+
+                        var success = item.CopyFile(bytesRead =>
                         {
-                            deleteList.Add(item);
+                            tracker.OnBytesCopied(group.Key, bytesRead);
+                        });
+
+                        if (success)
+                        {
+                            if (item.Device != null && item.Device.DeleteFiles)
+                            {
+                                concurrentDeleteList.Add(item);
+                            }
+                            tracker.OnFileCompleted(group.Key, fileName, true);
                         }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"WARNING: Failed to copy or verify file: {item.OriginalPath}");
-                    }
+                        else
+                        {
+                            Console.WriteLine($"WARNING: Failed to copy or verify file: {item.OriginalPath}");
+                            tracker.OnFileCompleted(group.Key, fileName, false);
+                        }
 
-                    var percent = totalSize > 0 ? (int)(bytesCopied * 100 / totalSize) : 100;
-
-                    var prgChars = progress.ToCharArray();
-
-                    for(int i = lastPercent; i < percent; i++)
-                    {
-                        prgChars[i/2] = '#';
+                        deviceFileIndex++;
                     }
 
-                    progress = new string(prgChars);
-                    lastPercent = (int)percent;
-                    if (!Console.IsOutputRedirected)
-                    {
-                        Console.CursorLeft = 0;
-                        Console.CursorTop = Math.Max(0, Console.CursorTop - 2);
-                        Console.Write(new String(' ', Console.WindowWidth));
-                        Console.CursorLeft = 0;
-                    }
-                    fileCount++;
-                }
+                    tracker.OnDeviceCompleted(group.Key);
+                })).ToArray();
 
-                Console.WriteLine($"Copying done!");
-                Console.WriteLine($"[{progress}]");
-                if (!Console.IsOutputRedirected)
-                {
-                    Console.CursorVisible = true;
-                }
+                Task.WhenAll(copyTasks).GetAwaiter().GetResult();
+                tracker.Finish();
+
+                CopyProgressTracker.SafeSetCursorVisibility(true);
+
+                var deleteList = concurrentDeleteList.ToList();
 
                 if (deleteList.Count > 0)
                 {

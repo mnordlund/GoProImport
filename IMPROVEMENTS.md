@@ -26,13 +26,13 @@ This document tracks prioritized bugs, performance optimizations, feature reques
 
 ## 2. Copy Performance & Transfer UX (Medium-High Priority)
 
-- [ ] **Stream-based chunked copying with live progress & transfer speed**
+- [x] **Stream-based chunked copying with live progress & transfer speed**
   - **Issue**: `File.Copy()` blocks during the copy of multi-gigabyte files (4 GB – 12 GB), making the console progress bar freeze for several minutes per file.
   - **Task**: Implement chunked `FileStream` copying with buffer pooling (e.g. 2 MB – 8 MB buffers) reporting live bytes copied, instantaneous/average speed (MB/s), and ETA.
-- [ ] **Safe console cursor updates**
+- [x] **Safe console cursor updates**
   - **Issue**: `Console.CursorTop` and `Console.CursorLeft` manipulations in `Program.cs` crash with `IOException` if stdout is redirected or piped.
   - **Task**: Check `Console.IsOutputRedirected` before invoking cursor positioning commands.
-- [ ] **Parallel multi-device copy support**
+- [x] **Parallel multi-device copy support**
   - **Issue**: Transfers from multiple drives/cards are executed sequentially.
   - **Task**: Allow concurrent copying when multiple distinct source devices are connected.
 
